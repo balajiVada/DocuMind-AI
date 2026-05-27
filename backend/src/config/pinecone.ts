@@ -31,7 +31,7 @@ export async function initPinecone() {
       // Since it's serverless free starter, let's default to aws / us-east-1
       await pinecone.createIndex({
         name: PINECONE_INDEX_NAME,
-        dimension: 1536, // Dimension for text-embedding-3-small
+        dimension: 768, // Dimension for Gemini text-embedding-004
         metric: 'cosine',
         spec: {
           serverless: {

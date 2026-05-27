@@ -1,28 +1,45 @@
 import { pinecone, PINECONE_INDEX_NAME } from "../config/pinecone";
+import { GoogleGenAI } from '@google/genai';
+
+const ai = new GoogleGenAI(process.env.GEMINI_API_KEY ? { apiKey: process.env.GEMINI_API_KEY } : {});
 
 export class VectorService {
   constructor() {}
 
-  private generateMockVector(text: string): number[] {
-    const vector = new Array(1536).fill(0);
-    // Simple deterministic generation based on text content
-    let seed = 0;
-    for (let i = 0; i < text.length; i++) {
-      seed += text.charCodeAt(i);
-    }
-    for (let i = 0; i < 1536; i++) {
-      const x = Math.sin(seed++ + i) * 10000;
-      vector[i] = x - Math.floor(x); // Gives a pseudo-random float between 0 and 1
-    }
-    return vector;
-  }
-
   async embedText(text: string): Promise<number[]> {
-    return this.generateMockVector(text);
+    const response = await ai.models.embedContent({
+      model: 'gemini-embedding-2',
+      contents: text,
+      config: {
+        outputDimensionality: 768,
+      }
+    });
+    
+    const embedding = response.embeddings?.[0]?.values;
+    if (!embedding) {
+      throw new Error("Failed to generate embedding from Gemini API.");
+    }
+    return embedding;
   }
 
   async embedDocuments(texts: string[]): Promise<number[][]> {
-    return texts.map((text) => this.generateMockVector(text));
+    const embeddings = await Promise.all(
+      texts.map(async (text) => {
+        const response = await ai.models.embedContent({
+          model: 'gemini-embedding-2',
+          contents: text,
+          config: {
+            outputDimensionality: 768,
+          }
+        });
+        return response.embeddings?.[0]?.values || [];
+      })
+    );
+    
+    if (embeddings.some(e => e.length === 0)) {
+      throw new Error("Failed to generate embeddings for all documents from Gemini API.");
+    }
+    return embeddings as number[][];
   }
 
   async upsertVectors(
