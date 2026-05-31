@@ -9,6 +9,8 @@ import { initPinecone } from './config/pinecone';
 
 import documentRoutes from './routes/document.routes';
 import chatRoutes from './routes/chat.routes';
+import authRoutes from './routes/auth.routes';
+import folderRoutes from './routes/folder.routes';
 
 dotenv.config();
 
@@ -27,6 +29,8 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // Routes
 app.use('/api/documents', documentRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/folders', folderRoutes);
 
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'DocuMind-AI Backend is running' });
@@ -35,6 +39,8 @@ app.get('/health', (req, res) => {
 // Database Connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/documind-ai';
 
+import { startWorker } from './workers/document.worker';
+
 mongoose
   .connect(MONGODB_URI)
   .then(async () => {
@@ -42,6 +48,9 @@ mongoose
     
     // Initialize Pinecone
     await initPinecone();
+
+    // Start background workers
+    startWorker();
 
     app.listen(PORT, () => {
       logger.info(`Server is running on port ${PORT}`);

@@ -44,8 +44,12 @@ export class VectorService {
 
   async upsertVectors(
     documentId: string,
+    workspaceId: string,
+    userId: string,
+    version: number,
     fileName: string,
-    chunks: Array<{ text: string; pageNumber: number; chunkIndex: number }>
+    chunks: Array<{ text: string; pageNumber: number; chunkIndex: number; chunkId: string }>,
+    folderId?: string
   ): Promise<void> {
     if (!pinecone) {
       throw new Error("Pinecone client is not initialized.");
@@ -63,14 +67,19 @@ export class VectorService {
         throw new Error(`Failed to generate embedding for chunk ${idx}`);
       }
       return {
-        id: `${documentId}-chunk-${chunk.chunkIndex}`,
+        id: `${workspaceId}:${documentId}:${version}:${chunk.chunkIndex}`,
         values: vector,
         metadata: {
-          text: chunk.text,
-          documentId: documentId,
+          userId,
+          workspaceId,
+          documentId,
+          folderId: folderId || '',
+          chunkId: chunk.chunkId,
+          documentVersion: version,
           fileName: fileName,
-          pageNumber: chunk.pageNumber,
+          pageNumber: chunk.pageNumber || 1,
           chunkIndex: chunk.chunkIndex,
+          text: chunk.text,
         },
       };
     });

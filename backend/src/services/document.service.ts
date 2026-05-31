@@ -1,4 +1,5 @@
 import DocumentModel from '../models/Document';
+import DocumentChunk from '../models/DocumentChunk';
 import { parseFile } from '../utils/parser';
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 import { vectorService } from './vector.service';
@@ -26,7 +27,7 @@ export class DocumentService {
       const parsedPages = await parseFile(doc.filePath, doc.fileType);
 
       logger.info({ fileName: doc.fileName }, 'Chunking document');
-      const chunks: Array<{ text: string; pageNumber: number; chunkIndex: number }> = [];
+      const chunks: Array<{ text: string; pageNumber: number; chunkIndex: number; chunkId: string }> = [];
       let globalChunkIndex = 0;
 
       for (const page of parsedPages) {
@@ -34,20 +35,37 @@ export class DocumentService {
         
         for (const text of splitTexts) {
           if (text.trim().length > 0) {
+            const chunkDoc = new DocumentChunk({
+              documentId: doc._id,
+              chunkIndex: globalChunkIndex,
+              pageNumber: page.pageNumber,
+              text: text.trim(),
+            });
+            await chunkDoc.save();
+
             chunks.push({
               text: text.trim(),
               pageNumber: page.pageNumber,
               chunkIndex: globalChunkIndex++,
+              chunkId: chunkDoc._id.toString(),
             });
           }
         }
       }
 
       logger.info({ chunksLength: chunks.length }, 'Vectorizing and storing chunks to Pinecone');
-      await vectorService.upsertVectors(doc._id.toString(), doc.fileName, chunks);
+      await vectorService.upsertVectors(
+        doc._id.toString(),
+        doc.workspaceId.toString(),
+        doc.userId.toString(),
+        doc.version || 1,
+        doc.fileName,
+        chunks,
+        doc.folderId ? doc.folderId.toString() : undefined
+      );
 
       // Update document ingestion status in MongoDB
-      doc.status = 'indexed';
+      doc.status = 'READY';
       doc.chunkCount = chunks.length;
       doc.metadata = {
         ...doc.metadata,
@@ -58,7 +76,7 @@ export class DocumentService {
       logger.info({ fileName: doc.fileName }, 'Document successfully ingested and indexed');
     } catch (error) {
       logger.error({ err: error, fileName: doc.fileName }, 'Ingestion pipeline failed for document');
-      doc.status = 'failed';
+      doc.status = 'FAILED';
       await doc.save();
     }
   }

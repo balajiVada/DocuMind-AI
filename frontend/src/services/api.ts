@@ -1,39 +1,51 @@
-import axios from 'axios';
+import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
+import { useAuthStore } from '../stores/useAuthStore';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5005/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5005/api';
 
-export interface DocumentInfo {
-  _id: string;
-  fileName: string;
-  fileType: string;
-  fileSize: number;
-  filePath: string;
-  status: 'processing' | 'indexed' | 'failed';
-  uploadDate: string;
-  chunkCount: number;
-}
-
-export const api = {
-  getDocuments: async (): Promise<DocumentInfo[]> => {
-    const response = await axios.get(`${API_BASE_URL}/documents`);
-    return response.data;
+export const apiClient = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
   },
+});
 
-  uploadDocument: async (file: File, onUploadProgress?: (progressEvent: any) => void): Promise<DocumentInfo> => {
-    const formData = new FormData();
-    formData.append('file', file);
+// Request interceptor to inject JWT and Workspace ID
+apiClient.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    // Get latest state directly from Zustand store
+    const { token, activeWorkspaceId } = useAuthStore.getState();
 
-    const response = await axios.post(`${API_BASE_URL}/documents/upload`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-      onUploadProgress,
-    });
-    
-    return response.data.document;
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    if (activeWorkspaceId) {
+      config.headers['x-workspace-id'] = activeWorkspaceId;
+    }
+
+    return config;
   },
+  (error) => Promise.reject(error)
+);
 
-  deleteDocument: async (id: string): Promise<void> => {
-    await axios.delete(`${API_BASE_URL}/documents/${id}`);
-  },
-};
+// Response interceptor for global error normalization & 401 handling
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError<{ error?: string; message?: string }>) => {
+    // Auto-logout on 401 Unauthorized
+    if (error.response?.status === 401) {
+      useAuthStore.getState().logout();
+      window.location.href = '/login';
+    }
+
+    // Normalize error message
+    const normalizedError = 
+      error.response?.data?.error || 
+      error.response?.data?.message || 
+      error.message || 
+      'An unexpected error occurred.';
+
+    return Promise.reject(new Error(normalizedError));
+  }
+);

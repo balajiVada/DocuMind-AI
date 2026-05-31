@@ -1,322 +1,615 @@
 # AI-Powered Enterprise Knowledge Intelligence Platform
 
-## Phase-Wise Implementation Plan
+# Revised Phase-Wise Implementation Plan
 
 ---
 
-## Overview
+# Overview
 
 ```mermaid
 flowchart LR
-    P1[Phase 1\nCore RAG Foundation] --> P2[Phase 2\nRetrieval & Formats] --> P3[Phase 3\nAdvanced Features] --> P4[Phase 4\nEnterprise & Teams] --> P5[Phase 5\nOptimization & Monitoring]
+    P1[Phase 1\nCore RAG Foundation] --> P2[Phase 2\nRetrieval & Platform Core] --> P3[Phase 3\nKnowledge Intelligence Features] --> P4[Phase 4\nEnterprise & Observability] --> P5[Phase 5\nAdvanced Document Intelligence]
 ```
 
-The project is split into **5 phases**, each building on the previous one. Every phase ends with a working, demo-able product. Features that don't affect core functionality are intentionally pushed to later phases.
+The project is intentionally designed in progressive layers.
+
+The first phases focus on building a complete, polished, production-style RAG platform entirely in Node.js. Advanced OCR, layout-aware parsing, and heavy AI document intelligence are intentionally delayed to a dedicated later phase.
+
+This approach:
+
+- Keeps development realistic and finishable
+- Maximizes resume value early
+- Avoids getting stuck in OCR/parsing complexity
+- Produces a working product after every phase
+- Allows Python microservices to be added later without major refactoring
 
 ---
 
-## Phase 1 — Core RAG Foundation
+# Core Architectural Strategy
 
-> **Goal:** Get the end-to-end pipeline working. A user uploads a document, asks a question, and gets a cited answer.
+## Primary Stack (Initial Development)
 
-This is the backbone of the entire platform. Nothing else should be built until this works reliably.
+- React frontend
+- Node.js + Express backend
+- LangChain JS
+- Gemini models
+- Pinecone / pgvector
+- PostgreSQL or MongoDB
+- Redis (later phases)
+
+## Future AI Upgrade Layer
+
+Python microservices are intentionally postponed until later phases.
+
+Python will eventually handle:
+
+- Advanced OCR
+- Scanned document understanding
+- Table extraction
+- Layout-aware parsing
+- Advanced reranking
+- Advanced NLP pipelines
+- Multimodal document intelligence
 
 ---
 
-### 1.1 Document Upload
+# Phase 1 — Core RAG Foundation
 
-- Accept file uploads from the user (PDF, DOCX, TXT to start)
-- Store uploaded files on the server or cloud storage
-- Display upload status and file list in the UI
+> Goal: Build the complete end-to-end RAG pipeline. A user uploads a document, asks a question, and receives a grounded answer with citations.
 
-### 1.2 Document Processing Pipeline
+This phase establishes the backbone of the platform.
+
+---
+
+## 1.1 Document Upload
+
+- Upload PDF, DOCX, and TXT files
+- Store uploaded files locally or in cloud storage
+- Show upload progress and uploaded document list
+
+---
+
+## 1.2 Document Processing Pipeline
 
 - Extract raw text from uploaded files
-- Split text into smaller chunks (chunking strategy)
-- Attach basic metadata to each chunk (file name, page number, chunk index)
-
-### 1.3 Embedding & Vector Storage
-
-- Generate vector embeddings for each chunk using an embedding model
-- Store embeddings in Pinecone (vector database)
-- Map each vector back to its source chunk and metadata
-
-### 1.4 Question Answering
-
-- Accept a natural language question from the user
-- Convert the question into an embedding
-- Search Pinecone for the most relevant chunks (semantic search)
-- Pass retrieved chunks + question to an LLM to generate an answer
-
-### 1.5 Source Citations
-
-- Display the source document name and page number alongside every answer
-- Show the exact excerpt that the answer was based on
-
-### 1.6 Basic Chat UI
-
-- Simple chat interface (question input + answer display)
-- File upload panel
-- Streaming response support (answers appear word by word)
+- Perform chunking
+- Attach metadata:
+  - file name
+  - page number
+  - chunk index
+  - upload timestamp
 
 ---
 
-### Phase 1 Deliverable
+## 1.3 Embedding & Vector Storage
 
-A working single-user document chatbot. Upload a PDF, ask questions, get cited answers in real time.
-
----
-
-## Phase 2 — Retrieval Quality & Multi-Format Support
-
-> **Goal:** Make the system smarter about finding the right content, and support more document types.
-
-Phase 1 retrieval is purely semantic. This phase makes it significantly more accurate.
+- Generate embeddings for chunks
+- Store embeddings in Pinecone
+- Map vectors back to source chunks
+- Store metadata for retrieval and citations
 
 ---
 
-### 2.1 Hybrid Retrieval
+## 1.4 Conversational Question Answering
 
-- Add keyword-based search (BM25) alongside vector search
-- Combine scores from both methods to rank results
-- This improves results for exact-match queries (names, dates, codes)
-
-### 2.2 Re-Ranking
-
-- After initial retrieval, re-rank the top results using a cross-encoder model
-- Only the highest-quality chunks are passed to the LLM
-- Reduces irrelevant context and improves answer accuracy
-
-### 2.3 Query Rewriting
-
-- Before searching, rewrite the user's question into a better search query
-- Handles vague or conversational questions like _"what about the penalty clause?"_
-
-### 2.4 Additional File Formats
-
-- **PPTX** — extract text from slide content and speaker notes
-- **XLSX / CSV** — extract tabular data, preserve structure
-- **Scanned PDFs and images** — run OCR to extract text from image-based documents
-- **Table extraction** — detect and preserve tables as structured content
-
-### 2.5 Conversation Memory
-
-- Remember previous messages within a chat session
-- Allow follow-up questions like _"what did that clause say again?"_
-- Maintain a conversation history that is passed to the LLM with each query
-
-### 2.6 Duplicate Detection
-
-- Detect and skip duplicate or near-duplicate chunks during ingestion
-- Prevent the same content from appearing multiple times in search results
+- Accept natural language questions
+- Generate query embeddings
+- Retrieve relevant chunks from Pinecone
+- Send retrieved context to Gemini
+- Generate grounded answers
 
 ---
 
-### Phase 2 Deliverable
+## 1.5 Source Citations
 
-A meaningfully smarter system that handles more file types and gives better answers, especially on complex or multi-part questions.
-
----
-
-## Phase 3 — Advanced Features & User Accounts
-
-> **Goal:** Add the features that make this a knowledge assistant, not just a search tool. Add user accounts and document organization.
+- Display document source
+- Display page number
+- Display supporting excerpts
+- Highlight matched chunk text
 
 ---
 
-### 3.1 Document Summarization
+## 1.6 Basic Chat UI
 
-- Generate an executive summary for any uploaded document
-- Generate section-level summaries
-- Extract key insights, action items, and bullet-point takeaways
-
-### 3.2 Cross-Document Comparison
-
-- Allow the user to select two or more documents to compare
-- Highlight similarities, differences, and missing sections
-- Useful for comparing contracts, policy versions, or research papers
-
-### 3.3 Structured Data Extraction
-
-- Extract specific fields from documents: dates, names, monetary values, clauses
-- Allow users to define custom fields to extract
-- Export extracted data as JSON, CSV, or Excel
-
-### 3.4 `@mention` Context Targeting
-
-- Parse `@document` and `@url` mentions in the chat input
-- When a mention is detected, restrict retrieval to only that source
-- Examples:
-  - `Summarize @Annual_Report_2024.pdf`
-  - `Compare @Contract_A.pdf and @Contract_B.pdf`
-  - `Answer using @https://company.com/policy`
-
-### 3.5 Web Page Ingestion
-
-- Accept a URL as input
-- Fetch and extract text content from the web page
-- Index it alongside uploaded documents so users can query it
-
-### 3.6 User Authentication
-
-- User registration and login
-- Secure sessions and password handling
-- Each user sees only their own documents
-
-### 3.7 Folder & Workspace Management
-
-- Users can create folders to organize documents
-- Group documents by project, client, or topic
-- Basic search/filter by folder or document name
+- Chat interface
+- Upload panel
+- Streaming responses
+- Chat history display
 
 ---
 
-### Phase 3 Deliverable
+## Phase 1 Deliverable
 
-A full-featured knowledge assistant with user accounts, document organization, and powerful analysis capabilities.
-
----
-
-## Phase 4 — Enterprise Features & Team Collaboration
-
-> **Goal:** Make the platform usable by teams, not just individuals. Add access control, versioning, and export capabilities.
+A working single-user RAG chatbot capable of answering questions over uploaded documents with citations.
 
 ---
 
-### 4.1 Role-Based Access Control (RBAC)
+# Phase 2 — Retrieval & Platform Core
 
-- Define roles: Admin, Editor, Viewer
-- Admins can manage users and documents
-- Viewers can query but not upload or delete
-- Restrict access to specific folders or workspaces per role
+> Goal: Improve retrieval quality and transform the prototype into a real multi-user platform.
 
-### 4.2 Workspace Sharing
-
-- Users can invite team members to a shared workspace
-- Shared workspaces have their own document collections
-- Activity is visible to all members of the workspace
-
-### 4.3 Document Versioning
-
-- Upload a new version of an existing document
-- Keep a version history with timestamps
-- Compare two versions to see what changed
-- Users can reference a specific version in queries
-
-### 4.4 Export & Reporting
-
-- Export answers, summaries, and comparisons as:
-  - **PDF** — formatted report
-  - **Markdown** — for documentation tools
-  - **CSV / JSON** — for structured extraction results
-- Generate a full report from a multi-document analysis session
-
-### 4.5 Background Processing
-
-- Process large documents asynchronously (don't block the UI)
-- Show a progress indicator during ingestion
-- Notify users when a document is ready to query
-- Retry failed jobs automatically
+This phase focuses on strong Node.js-first RAG engineering.
 
 ---
 
-### Phase 4 Deliverable
+## 2.1 Hybrid Retrieval
 
-A team-ready platform with access control, shared workspaces, document versioning, and exportable reports.
+- Combine:
+  - semantic vector search
+  - keyword/BM25 search
 
----
-
-## Phase 5 — Optimization & Observability
-
-> **Goal:** Make the platform production-grade. Measure quality, reduce costs, and add monitoring.
-
-This phase is built last because it requires real usage data and a stable system to optimize against.
+- Merge and rank results
+- Improve exact-match retrieval performance
 
 ---
 
-### 5.1 Evaluation Framework
+## 2.2 Metadata Filtering
 
-- Measure retrieval quality: Precision@K, Recall@K
-- Check answer groundedness (does the answer actually come from the retrieved chunks?)
-- Detect hallucinations (LLM claims not supported by source documents)
-- Run A/B tests on different retrieval or prompting strategies
+Allow filtering retrieval by:
 
-### 5.2 Cost Optimization
-
-- Cache embeddings for chunks that haven't changed (avoid re-embedding)
-- Incremental indexing — only process new or updated documents
-- Detect and skip duplicate documents at upload time
-- Select cheaper models for simpler queries dynamically
-
-### 5.3 Observability & Analytics
-
-- Track token usage per query and per user
-- Log retrieval scores to identify weak retrieval cases
-- Monitor error rates, latency, and uptime
-- Collect user feedback (thumbs up/down on answers)
-- Dashboard to review usage trends and quality metrics
-
-### 5.4 Performance Improvements
-
-- Add Redis caching for frequent queries
-- Optimize chunk size and overlap based on eval results
-- Tune re-ranking thresholds based on real data
+- document
+- folder
+- tags
+- upload date
+- author
+- workspace
 
 ---
 
-### Phase 5 Deliverable
+## 2.3 Query Rewriting
 
-A production-ready platform with quality measurement, cost controls, and a monitoring dashboard.
+- Rewrite conversational questions into retrieval-optimized queries
+- Improve vague or ambiguous searches
+
+Examples:
+
+- “What did the agreement say about penalties?”
+- “Summarize the latest policy changes”
 
 ---
 
-## Full Feature Map
+## 2.4 Conversation Memory
+
+- Maintain session-based chat memory
+- Support follow-up questions
+- Store chat history per conversation
+- Add memory summarization to reduce token growth
+
+---
+
+## 2.5 Additional File Formats
+
+Add support for:
+
+- PPTX
+- XLSX
+- CSV
+
+Focus only on:
+
+- text extraction
+- simple table extraction
+- metadata extraction
+
+Advanced OCR and layout-aware parsing are intentionally postponed.
+
+---
+
+## 2.6 Duplicate Detection
+
+- Detect duplicate documents
+- Detect duplicate chunks
+- Prevent repeated embeddings
+- Reduce retrieval noise
+
+---
+
+## 2.7 User Authentication
+
+- User registration/login
+- Secure password storage
+- JWT/session authentication
+- User-level document isolation
+
+---
+
+## 2.8 Folder & Workspace Management
+
+- Create folders
+- Organize documents
+- Basic workspace support
+- Folder-based filtering
+
+---
+
+## 2.9 Background Processing
+
+- Asynchronous ingestion jobs
+- Upload queue system
+- Progress tracking
+- Retry failed ingestion jobs
+
+---
+
+## Phase 2 Deliverable
+
+A strong multi-user RAG platform with significantly improved retrieval quality, document organization, async ingestion, and scalable architecture.
+
+---
+
+# Phase 3 — Knowledge Intelligence Features
+
+> Goal: Add advanced AI-powered knowledge workflows that make the platform more than just a search system.
+
+This phase focuses on high-value product intelligence features that are still realistic in Node.js.
+
+---
+
+## 3.1 Document Summarization
+
+- Executive summaries
+- Section summaries
+- Key insights
+- Bullet-point takeaways
+- Action item extraction
+
+---
+
+## 3.2 Cross-Document Comparison
+
+- Compare multiple documents
+- Highlight:
+  - similarities
+  - differences
+  - missing sections
+  - changed clauses
+
+Useful for:
+
+- contracts
+- reports
+- policies
+- specifications
+
+---
+
+## 3.3 Structured Data Extraction
+
+Extract:
+
+- names
+- dates
+- metrics
+- monetary values
+- clauses
+- entities
+
+Export results as:
+
+- JSON
+- CSV
+- Excel
+
+---
+
+## 3.4 @mention Context Targeting
+
+Support:
+
+- @document
+- @url
+
+Examples:
+
+- Summarize @Annual_Report_2025.pdf
+- Compare @Contract_A.pdf and @Contract_B.pdf
+- Answer using @[https://company.com/policy](https://company.com/policy)
+
+Retrieval becomes restricted to selected sources.
+
+---
+
+## 3.5 Web Page Ingestion
+
+- Accept URLs
+- Extract web content
+- Clean HTML
+- Index web content alongside uploaded documents
+
+---
+
+## 3.6 Document Versioning
+
+- Upload updated versions
+- Track version history
+- Compare versions
+- Reference specific document versions
+
+---
+
+## 3.7 Export & Reporting
+
+Export:
+
+- summaries
+- answers
+- comparisons
+- structured extraction results
+
+Supported formats:
+
+- PDF
+- Markdown
+- CSV
+- JSON
+
+---
+
+## Phase 3 Deliverable
+
+A production-style AI knowledge assistant with advanced analysis workflows, structured extraction, comparison capabilities, and document intelligence features.
+
+---
+
+# Phase 4 — Enterprise Features & Observability
+
+> Goal: Add production-grade engineering maturity, team collaboration, monitoring, and optimization.
+
+This phase focuses heavily on architecture, scalability, and operational quality.
+
+---
+
+## 4.1 Role-Based Access Control (RBAC)
+
+Roles:
+
+- Admin
+- Editor
+- Viewer
+
+Support:
+
+- workspace-level permissions
+- folder-level permissions
+- restricted document access
+
+---
+
+## 4.2 Workspace Sharing
+
+- Invite team members
+- Shared workspaces
+- Shared document collections
+- Team activity visibility
+
+---
+
+## 4.3 Evaluation Framework
+
+Track:
+
+- Precision@K
+- Recall@K
+- retrieval quality
+- groundedness
+- latency benchmarks
+- hallucination estimation
+
+Add A/B testing for:
+
+- prompts
+- retrieval strategies
+- ranking strategies
+
+---
+
+## 4.4 Observability & Analytics
+
+Track:
+
+- token usage
+- retrieval scores
+- latency
+- errors
+- query analytics
+- user feedback
+
+Add dashboards for:
+
+- usage trends
+- retrieval failures
+- cost monitoring
+
+---
+
+## 4.5 Cost Optimization
+
+- embedding caching
+- incremental indexing
+- duplicate prevention
+- dynamic model selection
+- retrieval caching
+
+---
+
+## 4.6 Performance Optimization
+
+- Redis caching
+- optimized chunking
+- retrieval tuning
+- prompt optimization
+- context compression
+- streaming optimizations
+
+---
+
+## Phase 4 Deliverable
+
+A scalable enterprise-ready RAG platform with collaboration, monitoring, evaluation, optimization, and production-grade operational tooling.
+
+---
+
+# Phase 5 — Advanced Document Intelligence (Python Upgrade Layer)
+
+> Goal: Upgrade the ingestion and AI pipeline using Python microservices for advanced document intelligence.
+
+This phase is intentionally separated because it introduces significant ML/NLP complexity.
+
+The existing Node.js platform remains the main application layer.
+
+Python services are introduced only for AI-heavy document processing.
+
+---
+
+# Proposed Architecture
+
+```mermaid
+flowchart TD
+    FE[React Frontend] --> API[Node.js API Layer]
+    API --> PY[Python AI Microservices]
+    API --> DB[(PostgreSQL / MongoDB)]
+    API --> VDB[(Vector Database)]
+    PY --> VDB
+```
+
+---
+
+## 5.1 Advanced OCR
+
+Add support for:
+
+- scanned PDFs
+- image-based documents
+- noisy scans
+- rotated documents
+- handwritten text
+
+Possible future tools:
+
+- Tesseract
+- PaddleOCR
+- EasyOCR
+- DocTR
+
+---
+
+## 5.2 Layout-Aware Parsing
+
+Improve understanding of:
+
+- headers
+- footers
+- columns
+- forms
+- tables
+- nested layouts
+- section hierarchies
+
+---
+
+## 5.3 Advanced Table Extraction
+
+- Preserve table structure
+- Extract relational table data
+- Detect merged cells and headers
+- Improve spreadsheet understanding
+
+---
+
+## 5.4 Advanced Reranking Pipelines
+
+Add:
+
+- cross-encoder rerankers
+- transformer reranking models
+- semantic relevance scoring
+
+Possible future tools:
+
+- sentence-transformers
+- BGE rerankers
+- Cohere rerank
+
+---
+
+## 5.5 Advanced Chunking & Retrieval
+
+- semantic chunking
+- structure-aware chunking
+- parent-child retrieval improvements
+- layout-aware chunking
+- retrieval compression
+
+---
+
+## 5.6 Multimodal Document Intelligence
+
+Future support for:
+
+- image understanding
+- chart understanding
+- diagram extraction
+- visual document reasoning
+
+---
+
+## Phase 5 Deliverable
+
+A production-grade enterprise document intelligence platform with advanced OCR, layout-aware parsing, sophisticated retrieval pipelines, and multimodal AI capabilities.
+
+---
+
+# Full Feature Map
 
 ```mermaid
 mindmap
   root((Platform))
     Phase 1
-      File upload
-      Text extraction
+      Uploads
       Chunking
       Embeddings
-      Vector search
-      Cited answers
+      Vector Search
+      Citations
       Chat UI
     Phase 2
-      Hybrid retrieval
-      Re-ranking
-      Query rewriting
-      OCR
-      More file formats
-      Conversation memory
+      Hybrid Retrieval
+      Metadata Filters
+      Query Rewriting
+      Memory
+      Auth
+      Workspaces
+      Async Jobs
     Phase 3
-      Summarization
-      Doc comparison
-      Data extraction
-      @mention syntax
-      Web page ingestion
-      User auth
-      Folders
+      Summaries
+      Comparisons
+      Extraction
+      @mentions
+      Web Ingestion
+      Versioning
+      Exports
     Phase 4
       RBAC
-      Workspace sharing
-      Doc versioning
-      Exports
-      Background jobs
+      Workspace Sharing
+      Evaluation
+      Analytics
+      Cost Optimization
+      Performance Tuning
     Phase 5
-      Eval framework
-      Hallucination detection
-      Cost optimization
-      Analytics dashboard
-      Performance tuning
+      OCR
+      Layout Parsing
+      Advanced Tables
+      Advanced Reranking
+      Multimodal AI
 ```
 
 ---
 
-## Key Principles
+# Key Principles
 
-- **Each phase produces a working product.** Nothing is left half-built at a phase boundary.
-- **Core functionality first.** Auth, versioning, and monitoring are real features, but they don't affect whether the RAG pipeline works correctly.
-- **Complexity is earned.** Re-ranking, hybrid retrieval, and evals are only useful once basic retrieval is working.
-- **Later phases need earlier ones.** You can't optimize what you haven't built, and you can't evaluate a system that doesn't exist yet.
+- Every phase must produce a usable, demoable product
+- Node.js-first development keeps the platform realistic and finishable
+- Python is introduced only where it provides major practical advantages
+- Retrieval quality matters more than adding excessive AI complexity early
+- Product polish and architecture quality matter more than experimental ML features
+- Finishable systems are more valuable than overengineered prototypes
+- Complexity should be introduced gradually and intentionally
